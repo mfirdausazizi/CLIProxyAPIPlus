@@ -350,6 +350,25 @@ func TestContextManagementCompactionCompatibility(t *testing.T) {
 	}
 }
 
+func TestPromptCacheFieldsRemovedForCodexResponsesCompatibility(t *testing.T) {
+	inputJSON := []byte(`{
+		"model": "gpt-5.2",
+		"prompt_cache_key": "cache-key-1",
+		"prompt_cache_retention": "persistent",
+		"input": [{"role":"user","content":"hello"}]
+	}`)
+
+	output := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
+	outputStr := string(output)
+
+	if gjson.Get(outputStr, "prompt_cache_key").Exists() {
+		t.Fatalf("prompt_cache_key should be removed for Codex /responses compatibility")
+	}
+	if gjson.Get(outputStr, "prompt_cache_retention").Exists() {
+		t.Fatalf("prompt_cache_retention should be removed for Codex /responses compatibility")
+	}
+}
+
 func TestTruncationRemovedForCodexCompatibility(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",

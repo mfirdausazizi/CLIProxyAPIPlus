@@ -108,6 +108,9 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 		return resp, err
 	}
 
+	translated, _ = sjson.DeleteBytes(translated, "prompt_cache_retention")
+	translated, _ = sjson.DeleteBytes(translated, "prompt_cache_key")
+
 	url := strings.TrimSuffix(baseURL, "/") + endpoint
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(translated))
 	if err != nil {
@@ -204,6 +207,9 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 	if err != nil {
 		return nil, err
 	}
+
+	translated, _ = sjson.DeleteBytes(translated, "prompt_cache_retention")
+	translated, _ = sjson.DeleteBytes(translated, "prompt_cache_key")
 
 	// Request usage data in the final streaming chunk so that token statistics
 	// are captured even when the upstream is an OpenAI-compatible provider.

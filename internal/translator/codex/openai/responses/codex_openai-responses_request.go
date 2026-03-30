@@ -34,6 +34,7 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 
 	rawJSON, _ = sjson.DeleteBytes(rawJSON, "truncation")
 	rawJSON = applyResponsesCompactionCompatibility(rawJSON)
+	rawJSON = applyResponsesPromptCacheCompatibility(rawJSON)
 
 	// Delete the user field as it is not supported by the Codex upstream.
 	rawJSON, _ = sjson.DeleteBytes(rawJSON, "user")
@@ -59,6 +60,15 @@ func applyResponsesCompactionCompatibility(rawJSON []byte) []byte {
 	}
 
 	rawJSON, _ = sjson.DeleteBytes(rawJSON, "context_management")
+	return rawJSON
+}
+
+// applyResponsesPromptCacheCompatibility removes prompt cache request fields that
+// Codex /responses currently rejects, while leaving upstream continuity handling
+// on other paths intact.
+func applyResponsesPromptCacheCompatibility(rawJSON []byte) []byte {
+	rawJSON, _ = sjson.DeleteBytes(rawJSON, "prompt_cache_retention")
+	rawJSON, _ = sjson.DeleteBytes(rawJSON, "prompt_cache_key")
 	return rawJSON
 }
 

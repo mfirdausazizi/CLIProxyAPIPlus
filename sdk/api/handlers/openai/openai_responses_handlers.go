@@ -27,6 +27,16 @@ func writeResponsesSSEChunk(w io.Writer, chunk []byte) {
 	if w == nil || len(chunk) == 0 {
 		return
 	}
+	// SSE event: and data: lines that belong to the same event must be
+	// separated by a single \n. Only use \n\n (blank line) between events.
+	// event: lines arrive as standalone chunks from the upstream translator,
+	// so append only \n to keep them paired with the following data: chunk.
+	if bytes.HasPrefix(chunk, []byte("event:")) {
+		_, _ = w.Write([]byte("\n"))
+		_, _ = w.Write(chunk)
+		_, _ = w.Write([]byte("\n"))
+		return
+	}
 	if _, err := w.Write(chunk); err != nil {
 		return
 	}

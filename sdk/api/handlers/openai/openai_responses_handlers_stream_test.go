@@ -12,6 +12,37 @@ import (
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v6/sdk/config"
 )
 
+func TestWriteResponsesSSEChunkPairsEventAndData(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+
+	// Simulate how the translator returns event: and data: as separate chunks.
+	writeResponsesSSEChunk(recorder, []byte("event: response.created"))
+	writeResponsesSSEChunk(recorder, []byte("data: {\"type\":\"response.created\"}"))
+
+	body := recorder.Body.String()
+
+	// event: and data: must be in the same SSE block (single \n between them,
+	// double \n only after the data: line to mark end of event).
+	expected := "\nevent: response.created\ndata: {\"type\":\"response.created\"}\n\n"
+	if body != expected {
+		t.Fatalf("SSE framing broken: event: and data: must be paired in the same block.\nGot:  %q\nWant: %q", body, expected)
+	}
+}
+
+func TestWriteResponsesSSEChunkDataOnlySuffix(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+
+	writeResponsesSSEChunk(recorder, []byte("data: {\"hello\":true}"))
+
+	body := recorder.Body.String()
+	expected := "data: {\"hello\":true}\n\n"
+	if body != expected {
+		t.Fatalf("unexpected output.\nGot:  %q\nWant: %q", body, expected)
+	}
+}
+
 func TestForwardResponsesStreamSeparatesDataOnlySSEChunks(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	base := handlers.NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, nil)

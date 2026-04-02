@@ -32,9 +32,17 @@ func writeResponsesSSEChunk(w io.Writer, chunk []byte) {
 	// event: lines arrive as standalone chunks from the upstream translator,
 	// so append only \n to keep them paired with the following data: chunk.
 	if bytes.HasPrefix(chunk, []byte("event:")) {
-		_, _ = w.Write([]byte("\n"))
-		_, _ = w.Write(chunk)
-		_, _ = w.Write([]byte("\n"))
+		if _, err := w.Write([]byte("\n")); err != nil {
+			return
+		}
+		if _, err := w.Write(chunk); err != nil {
+			return
+		}
+		if !bytes.HasSuffix(chunk, []byte("\n")) {
+			if _, err := w.Write([]byte("\n")); err != nil {
+				return
+			}
+		}
 		return
 	}
 	if _, err := w.Write(chunk); err != nil {

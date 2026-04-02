@@ -30,6 +30,22 @@ func TestWriteResponsesSSEChunkPairsEventAndData(t *testing.T) {
 	}
 }
 
+func TestWriteResponsesSSEChunkEventWithTrailingNewline(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+
+	// If the upstream sends event: with a trailing \n, we must not produce \n\n
+	// which would prematurely terminate the SSE event block.
+	writeResponsesSSEChunk(recorder, []byte("event: response.created\n"))
+	writeResponsesSSEChunk(recorder, []byte("data: {\"type\":\"response.created\"}"))
+
+	body := recorder.Body.String()
+	expected := "\nevent: response.created\ndata: {\"type\":\"response.created\"}\n\n"
+	if body != expected {
+		t.Fatalf("trailing newline on event: chunk broke SSE framing.\nGot:  %q\nWant: %q", body, expected)
+	}
+}
+
 func TestWriteResponsesSSEChunkDataOnlySuffix(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
